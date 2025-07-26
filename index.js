@@ -26,7 +26,7 @@ app.post("/send-email", async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: \`"ZevarClub" <${process.env.SMTP_USER}>\`,
+      from: `"ZevarClub" <${process.env.SMTP_USER}>\`,
       to,
       subject,
       text,
