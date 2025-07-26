@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import pdfRoute from "./generate-pdf.js";
+
 dotenv.config();
 
 const app = express();
@@ -45,4 +47,5 @@ app.post("/send-email", async (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 5000;
+app.use("/", pdfRoute);
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
