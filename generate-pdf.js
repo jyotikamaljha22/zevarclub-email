@@ -6,12 +6,15 @@ const router = express.Router();
 router.post("/generate-pdf", async (req, res) => {
   const { html, filename = "invoice.pdf" } = req.body;
 
-  if (!html) return res.status(400).json({ error: "Missing HTML content" });
+  if (!html) {
+    return res.status(400).json({ error: "Missing HTML content" });
+  }
 
   try {
     const browser = await puppeteer.launch({
       headless: "new",
-      args: ["--no-sandbox"]
+      args: ["--no-sandbox"],
+      executablePath: process.env.CHROME_BIN || undefined // ✅ Fallback for Render's built-in Chrome
     });
 
     const page = await browser.newPage();
