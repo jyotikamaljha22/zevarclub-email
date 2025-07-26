@@ -35,5 +35,5 @@ router.post('/generate-pdf', async (req, res) => {
     res.status(500).json({ error: 'PDF generation failed' });
   }
 });
+export default router;
 
-module.exports = router;
