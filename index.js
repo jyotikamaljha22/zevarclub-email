@@ -8,11 +8,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health check route
 app.get("/", (req, res) => res.send("👋 ZevarClub email API is alive"));
 
+// Email send route
 app.post("/send-email", async (req, res) => {
   try {
     const { to, subject, text, html } = req.body;
+
     if (!to || !subject || !(text || html)) {
       return res.status(400).json({ ok: false, error: "Missing fields" });
     }
@@ -26,7 +29,7 @@ app.post("/send-email", async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: `"ZevarClub" <${process.env.SMTP_USER}>\`,
+      from: `"ZevarClub" <${process.env.SMTP_USER}>`,
       to,
       subject,
       text,
@@ -40,5 +43,6 @@ app.post("/send-email", async (req, res) => {
   }
 });
 
+// Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(\`API running on port \${PORT}\`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
