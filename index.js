@@ -4,10 +4,11 @@ const cors = require("cors");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // allow larger payloads
 
 app.post("/send-email", async (req, res) => {
-  const { to, subject, html } = req.body;
+  const { to, subject, html, attachments } = req.body;
+
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -17,12 +18,15 @@ app.post("/send-email", async (req, res) => {
       },
     });
 
-    await transporter.sendMail({
+    const mailOptions = {
       from: `Zevar Club <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
-    });
+      attachments: attachments || []  // enable base64 PDF support
+    };
+
+    await transporter.sendMail(mailOptions);
 
     res.send({ success: true });
   } catch (err) {
