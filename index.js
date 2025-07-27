@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import pdfRoute from "./generate-pdf.js"; // ✅ Add this line
+import pdfRoute from "./generate-pdf.js";
 
 dotenv.config();
 
@@ -10,10 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health check route
 app.get("/", (req, res) => res.send("👋 ZevarClub email API is alive"));
 
-// Email send route
 app.post("/send-email", async (req, res) => {
   try {
     const { to, subject, text, html } = req.body;
@@ -45,7 +43,7 @@ app.post("/send-email", async (req, res) => {
   }
 });
 
-app.use("/", pdfRoute); // ✅ Register the new route
+app.use("/", pdfRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
