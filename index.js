@@ -1,49 +1,36 @@
-import express from "express";
-import cors from "cors";
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-import pdfRoute from "./generate-pdf.js";
-
-dotenv.config();
+const express = require("express");
+const nodemailer = require("nodemailer");
+const cors = require("cors");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => res.send("👋 ZevarClub email API is alive"));
-
 app.post("/send-email", async (req, res) => {
+  const { to, subject, html } = req.body;
   try {
-    const { to, subject, text, html } = req.body;
-
-    if (!to || !subject || !(text || html)) {
-      return res.status(400).json({ ok: false, error: "Missing fields" });
-    }
-
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
 
     await transporter.sendMail({
-      from: `"ZevarClub" <${process.env.SMTP_USER}>`,
+      from: `Zevar Club <${process.env.EMAIL_USER}>`,
       to,
       subject,
-      text,
-      html
+      html,
     });
 
-    res.json({ ok: true, message: "Email sent ✅" });
+    res.send({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ ok: false, error: "Server error" });
+    console.error("Email send error:", err);
+    res.status(500).send({ success: false, message: err.message });
   }
 });
 
-app.use("/", pdfRoute);
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(3000, () => {
+  console.log("Email API running on port 3000");
+});
