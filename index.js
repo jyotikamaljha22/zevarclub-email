@@ -1,11 +1,15 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
+const fs = require("fs");
+const { google } = require("googleapis");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "10mb" })); // allow larger payloads
+app.use(express.json({ limit: "10mb" })); // Allow large payloads
 
+// ✅ EMAIL ROUTE
 app.post("/send-email", async (req, res) => {
   const { to, subject, html, attachments } = req.body;
 
@@ -23,11 +27,10 @@ app.post("/send-email", async (req, res) => {
       to,
       subject,
       html,
-      attachments: attachments || []  // enable base64 PDF support
+      attachments: attachments || [], // support base64 PDFs
     };
 
     await transporter.sendMail(mailOptions);
-
     res.send({ success: true });
   } catch (err) {
     console.error("Email send error:", err);
@@ -35,23 +38,17 @@ app.post("/send-email", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("Email API running on port 3000");
-});
-const fs = require("fs");
-const { google } = require("googleapis");
-const { v4: uuidv4 } = require("uuid");
-
+// ✅ INVOICE UPLOAD ROUTE
 app.post("/upload-invoice", async (req, res) => {
   try {
     const { base64, filename } = req.body;
 
-    // Save PDF temporarily
+    // Save PDF to /tmp (safe for Render)
     const buffer = Buffer.from(base64, "base64");
     const tempPath = `/tmp/${filename}`;
     fs.writeFileSync(tempPath, buffer);
 
-    // 🔐 Use service account from Render ENV
+    // Auth from env variable
     const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
 
     const auth = new google.auth.GoogleAuth({
@@ -63,22 +60,24 @@ app.post("/upload-invoice", async (req, res) => {
 
     const fileMetadata = {
       name: filename,
-      parents: ["11H1qxfh6llgAYCaOZvfuJSCeJxZdnrWm"], // if using a specific Drive folder
+      parents: ["11H1qxfh6llgAYCaOZvfuJSCeJxZdnrWm"], // Your shared folder ID
     };
 
     const media = {
       mimeType: "application/pdf",
       body: fs.createReadStream(tempPath),
     };
+
     const file = await drive.files.create({
       requestBody: fileMetadata,
       media,
       fields: "id",
-      supportsAllDrives: true, // 🔥 This is the missing key
+      supportsAllDrives: true, // Required for shared folder uploads
     });
+
     const fileId = file.data.id;
 
-    // 📂 Make file public
+    // Make the uploaded file public
     await drive.permissions.create({
       fileId,
       requestBody: {
@@ -89,8 +88,8 @@ app.post("/upload-invoice", async (req, res) => {
 
     const { data } = await drive.files.get({
       fileId,
-      fields: "webViewLink"
-      supportsAllDrives: true,,
+      fields: "webViewLink",
+      supportsAllDrives: true,
     });
 
     res.json({ link: data.webViewLink });
@@ -98,4 +97,9 @@ app.post("/upload-invoice", async (req, res) => {
     console.error("❌ Upload failed:", err.message || err);
     res.status(500).json({ error: err.message || "Upload failed" });
   }
+});
+
+// ✅ START SERVER
+app.listen(3000, () => {
+  console.log("Email API running on port 3000");
 });
