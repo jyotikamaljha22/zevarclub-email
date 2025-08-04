@@ -4,12 +4,13 @@ const cors = require("cors");
 const fs = require("fs");
 const { google } = require("googleapis");
 const { v4: uuidv4 } = require("uuid");
+require("dotenv").config();
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "10mb" })); // Allow large payloads
+app.use(express.json({ limit: "10mb" }));
 
-// ✅ EMAIL ROUTE
+// 📨 Send Email Endpoint
 app.post("/send-email", async (req, res) => {
   const { to, subject, html, attachments } = req.body;
 
@@ -27,40 +28,43 @@ app.post("/send-email", async (req, res) => {
       to,
       subject,
       html,
-      attachments: attachments || [], // support base64 PDFs
+      attachments: attachments || [],
     };
 
     await transporter.sendMail(mailOptions);
     res.send({ success: true });
   } catch (err) {
-    console.error("Email send error:", err);
+    console.error("❌ Email send error:", err);
     res.status(500).send({ success: false, message: err.message });
   }
 });
 
-// ✅ INVOICE UPLOAD ROUTE
+// 📤 Upload PDF to Google Drive
 app.post("/upload-invoice", async (req, res) => {
   try {
     const { base64, filename } = req.body;
 
-    // Save PDF to /tmp (safe for Render)
     const buffer = Buffer.from(base64, "base64");
     const tempPath = `/tmp/${filename}`;
     fs.writeFileSync(tempPath, buffer);
 
-    // Auth from env variable
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+    const CLIENT_ID = process.env.CLIENT_ID;
+    const CLIENT_SECRET = process.env.CLIENT_SECRET;
+    const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: serviceAccount,
-      scopes: ["https://www.googleapis.com/auth/drive"],
-    });
+    const oAuth2Client = new google.auth.OAuth2(
+      CLIENT_ID,
+      CLIENT_SECRET,
+      "http://localhost" // Still works even on backend
+    );
 
-    const drive = google.drive({ version: "v3", auth });
+    oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+    const drive = google.drive({ version: "v3", auth: oAuth2Client });
 
     const fileMetadata = {
       name: filename,
-      parents: ["11H1qxfh6llgAYCaOZvfuJSCeJxZdnrWm"], // Your shared folder ID
+      parents: ["11H1qxfh6llgAYCaOZvfuJSCeJxZdnrWm"], // your Drive folder ID
     };
 
     const media = {
@@ -72,12 +76,11 @@ app.post("/upload-invoice", async (req, res) => {
       requestBody: fileMetadata,
       media,
       fields: "id",
-      supportsAllDrives: true, // Required for shared folder uploads
+      supportsAllDrives: true,
     });
 
     const fileId = file.data.id;
 
-    // Make the uploaded file public
     await drive.permissions.create({
       fileId,
       requestBody: {
@@ -99,7 +102,6 @@ app.post("/upload-invoice", async (req, res) => {
   }
 });
 
-// ✅ START SERVER
 app.listen(3000, () => {
-  console.log("Email API running on port 3000");
+  console.log("🚀 ZevarClub Email + Drive Upload API running on port 3000");
 });
