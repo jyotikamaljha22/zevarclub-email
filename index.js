@@ -63,7 +63,7 @@ app.post("/upload-invoice", async (req, res) => {
 
     const fileMetadata = {
       name: filename,
-      // parents: ["optional_folder_id_here"], // if using a specific Drive folder
+      parents: ["11H1qxfh6llgAYCaOZvfuJSCeJxZdnrWm"], // if using a specific Drive folder
     };
 
     const media = {
