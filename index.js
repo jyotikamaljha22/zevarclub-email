@@ -70,13 +70,12 @@ app.post("/upload-invoice", async (req, res) => {
       mimeType: "application/pdf",
       body: fs.createReadStream(tempPath),
     };
-
     const file = await drive.files.create({
       requestBody: fileMetadata,
       media,
       fields: "id",
+      supportsAllDrives: true, // 🔥 This is the missing key
     });
-
     const fileId = file.data.id;
 
     // 📂 Make file public
@@ -90,7 +89,8 @@ app.post("/upload-invoice", async (req, res) => {
 
     const { data } = await drive.files.get({
       fileId,
-      fields: "webViewLink",
+      fields: "webViewLink"
+      supportsAllDrives: true,,
     });
 
     res.json({ link: data.webViewLink });
