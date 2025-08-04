@@ -95,7 +95,7 @@ app.post("/upload-invoice", async (req, res) => {
 
     res.json({ link: data.webViewLink });
   } catch (err) {
-    console.error("❌ Upload failed:", err);
-    res.status(500).json({ error: "Upload failed" });
+    console.error("❌ Upload failed:", err.message || err);
+    res.status(500).json({ error: err.message || "Upload failed" });
   }
 });
